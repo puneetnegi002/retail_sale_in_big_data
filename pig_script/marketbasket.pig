@@ -1,0 +1,11 @@
+a = load 'retail/retailsalesraw/OnlineRetail.txt' using PigStorage('\t') as(Invoiceno:int,stockcode:chararray,description:chararray,quantity:int,invoicedate:chararray,unitprice:float,customerid:int,country:chararray);
+b = filter a BY (Invoiceno is not null OR stockcode is not null);
+c = filter b BY NOT (stockcode == ' ' OR stockcode == 'DOT' OR stockcode == 'POST' OR stockcode == 'BANK' OR stockcode == 'M');
+d = foreach c generate Invoiceno,SUBSTRING(stockcode,0,4) as (stockcat:chararray);
+e = filter d BY NOT(stockcat== '8509');
+f= DISTINCT e;
+g= group f by Invoiceno;
+h = foreach g generate group as IN,f as bkt;
+i = filter h by SIZE(bkt)>1 AND SIZE(bkt)<10;
+marketbasket = foreach i generate FLATTEN(BagToTuple(bkt.stockcat));
+store marketbasket into 'retail/marketbasket' using PigStorage(',');
